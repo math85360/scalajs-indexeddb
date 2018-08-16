@@ -35,13 +35,13 @@ abstract class ObjectStore[T, PK: Jsonable](val basename: String, val version: I
   def keyOf(item: T): PK
   def write(item: T): js.Any
   def read(item: js.Any): T
-  def updateRange[K: Jsonable](byIndex: ByIndex[K, T] = primaryKey)(rng: Range[K], transform: T => Unit, direction: Direction = Direction.Ascending)(implicit db: IndexedDB): Future[Seq[(T, T)]] = {
+  def updateRange[K: Jsonable](byIndex: ByIndex[K, T] = primaryKey)(rng: KeyRange[K], transform: T => Unit, direction: IndexTraversalDirection = IndexTraversalDirection.Ascending)(implicit db: IndexedDB): Future[Seq[(T, T)]] = {
     implicit val _byIndex = byIndex
     implicit val _read = read(_)
     implicit val _write = write(_)
     db.range(rng, direction, transform)
   }
-  def range[K: Jsonable](byIndex: ByIndex[K, T] = primaryKey)(rng: Range[K], direction: Direction = Direction.Ascending)(implicit db: IndexedDB): Future[Seq[T]] = {
+  def range[K: Jsonable](byIndex: ByIndex[K, T] = primaryKey)(rng: KeyRange[K], direction: IndexTraversalDirection = IndexTraversalDirection.Ascending)(implicit db: IndexedDB): Future[Seq[T]] = {
     implicit val _byIndex = byIndex
     implicit val _read = read(_)
     implicit val _write = write(_)

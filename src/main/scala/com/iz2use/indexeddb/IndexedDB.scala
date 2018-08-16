@@ -53,14 +53,14 @@ trait IndexedDB {
     f(tx)
   }
 
-  def range[K: Jsonable, P, R](rng: Range[K], direction: Direction = Direction.Ascending, op: Operation[P, R] = Operation.readOperation[P])(implicit byIndex: ByIndex[K, _], storeName: String, read: js.Any => P): Future[Seq[R]] = {
+  def range[K: Jsonable, P, R](rng: KeyRange[K], direction: IndexTraversalDirection = IndexTraversalDirection.Ascending, op: Operation[P, R] = Operation.readOperation[P])(implicit byIndex: ByIndex[K, _], storeName: String, read: js.Any => P): Future[Seq[R]] = {
     withStore { store =>
       val kr = rng match {
-        case Value(v) => IDBKeyRange only (v)
-        case RangeBounds(Some(lower), Some(upper), lowerOpen, upperOpen) => IDBKeyRange bound (lower, upper, lowerOpen, upperOpen)
-        case RangeBounds(Some(bound), None, open, _) => IDBKeyRange lowerBound (bound, open)
-        case RangeBounds(None, Some(bound), _, open) => IDBKeyRange upperBound (bound, open)
-        case KeyList(keys) => IDBKeyRange only (keys.head)
+        case KeyRange.Single(v) => IDBKeyRange only (v)
+        case KeyRange.Bounds(Some(lower), Some(upper), lowerOpen, upperOpen) => IDBKeyRange bound (lower, upper, lowerOpen, upperOpen)
+        case KeyRange.Bounds(Some(bound), None, open, _) => IDBKeyRange lowerBound (bound, open)
+        case KeyRange.Bounds(None, Some(bound), _, open) => IDBKeyRange upperBound (bound, open)
+        case KeyRange.List(keys) => IDBKeyRange only (keys.head)
         case _ => null
       }
       val p = Promise[Seq[R]]
@@ -71,7 +71,7 @@ trait IndexedDB {
         p failure (new Exception(s"IDB Error ${req.error.name}"))
       }
       req.onsuccess = rng match {
-        case KeyList(keys) =>
+        case KeyRange.List(keys) =>
           val ite = keys.toIterator
           ite.next()
           (_: Event) => {
